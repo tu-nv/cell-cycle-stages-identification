@@ -24,3 +24,11 @@ The training of the model can be started by running 'start_train.py' file. The a
 
 **EVALUATION** <br />
 After the execution of 'start_train.py' the results will be stored in a folder created in the same path with the name given as in the arguments. In the folder, the training curves along with the results from every 1000 iterations are saved. The results include the label matrix plots, confusion matrixes, and additionally ('Results.txt') the precision, recall, and f1 score values. The foldernames of the train and test split are also found in this folder. The validation data selected is a part of the test dataset.
+
+
+**ADDITIONAL RESULTS** <br />
+The video below shows the results when combining the proposed model with a cell tracking approach. The cell tracking approach used to get a cell track and then classify using the proposed model.
+
+<p align="center">
+  <img src="track_and_classify.gif" alt="animated" />
+</p>
