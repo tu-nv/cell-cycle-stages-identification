@@ -4,7 +4,7 @@ import numpy as np
 from .grammar import PathGrammar
 from .length_model import PoissonModel
 import glob
-import re
+import re 
 
 # Viterbi decoding
 class Viterbi(object):
