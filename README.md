@@ -30,7 +30,7 @@ After the execution of 'start_train.py' the results will be stored in a folder c
 
 
 **ADDITIONAL RESULTS** <br />
-The video below shows the results when combining the proposed model with a cell tracking approach. The cell tracking approach used to get a cell track and then classify using the proposed model. (The dataset is from http://celltrackingchallenge.net/)
+The video below shows the results when combining the proposed model with a cell tracking approach. The cell tracking approach used to get a cell track and then classify using the proposed model. (The image is from http://celltrackingchallenge.net/)
 
 <p align="center">
   <img src="track_and_classify.gif" alt="animated" />
