@@ -1,5 +1,5 @@
 import torch
-
+ 
 def weighted_bce_loss(input, target):
     """
     Loss weighted as given in deeptracking papar
