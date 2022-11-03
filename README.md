@@ -2,7 +2,7 @@
 Code to the paper "END-TO-END CLASSIFICATION OF CELL-CYCLE STAGES WITH CENTER-CELL FOCUS TRACKER USING RECURRENT NEURAL NETWORKS" using PyTorch.
 
 
-This repository contains the python code written using the PyTorch module for the training and evaluation of our proposed model which uses RNN layers for propagating time information. The code works with the 2D cell dataset with the cell in focus at the center of the image and tracked over time as shown in the video below. Two different datasets one with three classes(LiveCellMiner) and the other with 6 classes(Zhong Morphology) are used for the experiments.
+This repository contains the python code written using the PyTorch module for the training and evaluation of our proposed model which uses RNN layers for propagating time information. The code works with the 2D cell dataset with the cell in focus at the center of the image and tracked over time as shown in the video below. Two different datasets one with 3 classes (LiveCellMiner) and the other with 6 classes (Zhong Morphology) are used for the experiments.
 
 <p align="center">
   <img src="cell_sequence.gif" alt="animated" />
