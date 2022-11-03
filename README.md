@@ -10,7 +10,7 @@ This repository contains the python code using the PyTorch module for the traini
 
 Additionally the script is able to train using Viterbi decoding method which is a weakly-supervised training method trained without using ground truth labels for each frame.
 
-**ARCHITECTURE**
+**ARCHITECTURE** <br />
 The block diagram below shows the architecture of the proposed model.
 
 <p align="center">
