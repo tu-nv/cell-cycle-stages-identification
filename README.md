@@ -8,10 +8,10 @@ This repository contains the python code written using the PyTorch module for th
   <img src="cell_sequence.gif" alt="animated" />
 </p>
 
-**DATASETS**
+**DATASETS** <br />
 to do
 
-**TRAINING**
+**TRAINING** <br />
 The training of the model can be started by running 'start_train.py' file. The arguments for this script can be seen in the first part of the code. The image path can be set here. The user can select the model between our proposed model or the ResNet18 classification model from the arguments. The LiveCellMiner dataset and the Zhong Morphology datasets can be trained with this script. To work with a new dataset where the file names are different, the 'load_images_paths' function in the file 'Helper_Functions.py' may be needed to be updated.
 
-**EVALUATION**
+**EVALUATION** <br />
