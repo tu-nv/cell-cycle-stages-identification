@@ -11,13 +11,16 @@ This repository contains the python code using the PyTorch module for the traini
 Additionally the script is able to train using Viterbi decoding method which is a weakly-supervised training method trained without using ground truth labels for each frame.
 
 **ARCHITECTURE**
+The block diagram below shows the architecture of the proposed model.
 
 <p align="center">
   <img src="proposed_model.png" alt="animated" />
 </p>
 
+
 **DATASETS** <br />
 to do
+
 
 **TRAINING** <br />
 The training of the model can be started by running 'start_train.py' file. The arguments for this script can be seen in the first part of the code. The image path can be set here. The user can select the model between our proposed model or the ResNet18 classification model from the arguments. The LiveCellMiner dataset and the Zhong Morphology datasets can be trained with this script. To work with a new dataset where the file names are different, the 'load_images_paths' function in the file 'Helper_Functions.py' needed to be updated. The overiew of the training progress can be seen from the log file present in the output folder.
