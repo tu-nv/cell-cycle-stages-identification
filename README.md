@@ -7,3 +7,9 @@ This repository contains the python code written using pytorch module for the tr
 <p align="center">
   <img src="cell_sequence.gif" alt="animated" />
 </p>
+
+**DATASETS**
+
+**TRAINING**
+
+**EVALUATION**
