@@ -1,0 +1,6 @@
+torch
+numpy==1.23.1
+matplotlib
+opencv-python
+torchvision
+tensorboard==2.10.1

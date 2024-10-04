@@ -1,6 +1,6 @@
 import numpy as np
 import torch, cv2
-from torch import nn 
+from torch import nn
 import torchvision
 
 from .Conv_GRUBlock import ConvGRUBlock
@@ -14,15 +14,15 @@ class Base_Model(nn.Module):
     def __init__(self, n_classes = 6, num_layers = 3, channels_layers = [32,64,128], device = 'cpu', is_viterbi= True ):
         '''
         Initialization
-        
+
         Parameters:
-            n_classes       : (int)  Number of classes for the classification of labels.             
+            n_classes       : (int)  Number of classes for the classification of labels.
             num_layers      : (int)  Number of layers of hidden states in the architecture.
             channels_layers : (list) the size of channels belongs to each layer in the num_layers
             device          : (str) 'cuda' if use Gpu else give 'cpu'
             is_viterbi      : (bool) Is the method needs weakly-supervised viterbi output(True) or supervised sigmoid (False).
         '''
-        
+
         super(Base_Model, self).__init__()
 
         self.num_layers = num_layers
@@ -39,14 +39,14 @@ class Base_Model(nn.Module):
                                 nn.Conv2d(in_channels = 16 , out_channels = 32, kernel_size=(3,3), stride=(1,1), padding=(1,1)),
                                 nn.ReLU(inplace=True),
                                 nn.MaxPool2d(2,2))
-        
+
         #assert number of GRU layers and channel sizes
         assert(len(channels_layers) == num_layers)
         self.channels_layers = channels_layers
 
         #dialation and padding required for each GRU layer (in future can be updated)
-        dialation_list = [1]* self.num_layers  
-        padding_list = [1]* self.num_layers  
+        dialation_list = [1]* self.num_layers
+        padding_list = [1]* self.num_layers
 
         #time encoding network, GRU layers (blank list, later appended per number of layers)
         self.time_encoding_layers = nn.ModuleList()
@@ -90,11 +90,11 @@ class Base_Model(nn.Module):
         # defining a maxpool operation
         self.maxpool = nn.MaxPool2d(2,2)
 
-    
+
     def forward(self, inputs):
         '''
         Forward Propagation of the base model architecture
-        
+
         Parameters:
             inputs : (tensor --> [batchsize, seq_length, input channels, width, height])
 
@@ -118,7 +118,7 @@ class Base_Model(nn.Module):
         #image width and height
         w_img = inputs.shape[3]
         h_img = inputs.shape[3]
-        
+
         # iterate through each GRU layer
         for n in range(self.num_layers):
             # initialize the hidden states for each GRU layer with zeros
@@ -130,17 +130,17 @@ class Base_Model(nn.Module):
 
         # for each frame in sequence one layer of the architecture
         for i, input_t in enumerate(inputs.chunk(inputs.size(1), dim=1)):
-            
-            # itr: an additional first frame is send through the network to get an initial hidden layer other than zeros 
+
+            # itr: an additional first frame is send through the network to get an initial hidden layer other than zeros
             itr = 1
             if i == 0:
                 itr = 3
-            
+
             for l in range(itr):
                 #load image
                 input_tt = input_t[:,0,:,:,:]
                 input_tt = input_tt.to(device)
-                
+
                 #feature extraction through backbone network
                 input_1 = self.backbone(input_tt)
 
@@ -160,7 +160,7 @@ class Base_Model(nn.Module):
                 #skip if the additional first frame
                 if l != itr-1 :
                     continue
-                
+
                 #store outputs of each frame into the list
                 outputs += [ output ]
                 states  += [ state ]

@@ -1,22 +1,22 @@
 import numpy as np
 import torch, random, os, cv2
 import matplotlib.pyplot as plt
+import sys
 
 from Networks.viterbi import Viterbi
 from Networks.grammar import SingleTranscriptGrammar,PathGrammar
 from Networks.length_model import PoissonModel
 
-from Helper_Functions import setColorMap, plotconfusionmatrx
+from Helper_Functions import setColorMap, plotconfusionmatrix
 
-import tensorflow as tf
 import tensorboard as tb
-tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 from torch.utils.tensorboard import SummaryWriter
+np.set_printoptions(threshold=sys.maxsize)
 
 class Trainer:
     '''
     A class to handle training, validation, saving of models
-    
+
     Parameters:
         model                   : The model to be trained
         model_type              : To train with GRU per sequence or train directly as images
@@ -29,8 +29,8 @@ class Trainer:
         loss2_occurance         : Occurance of the loss 2 during training
         train_different_length  : Whether to train different lengths of sequences
         is_viterbi              : To be trained in supervised or weakly-supervised viterbi method
-        decoder                 : decoder for the viterbi 
-        prior                   : prior probabilities for viterbi 
+        decoder                 : decoder for the viterbi
+        prior                   : prior probabilities for viterbi
         mean_lengths            : mean lengths for viterbi
     '''
 
@@ -75,33 +75,36 @@ class Trainer:
             counts = 2
         else:
             counts = 1
-        #for each different lengths    
+        #for each different lengths
         for c in range(0, counts):
-            
-            # load the tensors from dataloader dictionary   
-            target =  inputs["mask"]   
+            self.Logger.log('info', f'start train with {inputs["folder"][0]}')
+
+            # load the tensors from dataloader dictionary
+            target =  inputs["mask"]
             groundtruth = inputs["label"]
             batch  = inputs["image"]
+            print("batch size: ", batch.size())
 
             # to train different length cut the sequences, choose random points for c=1 and c=2
-            if c == 1 and 'B02' not in inputs["folder"][0]: 
+            if c == 1 and 'B02' not in inputs["folder"][0]:
                 idx1 = int((torch.argmax(groundtruth[0],dim=1) == 1).nonzero(as_tuple=True)[0][0])
-                strt = random.randint(0,max(0,idx1+15))
-                end = random.randint(min(batch.shape[1],strt+25), batch.shape[1])
+                strt = random.randint(0,max(0,idx1+2))
+                end = random.randint(min(batch.shape[1],strt+5), batch.shape[1])
                 target = target[:,strt:end]
                 groundtruth = groundtruth[:,strt:end]
                 batch = batch[:,strt:end]
             elif c == 2 and 'B02' not in inputs["folder"][0]:
                 idx1 = int((torch.argmax(groundtruth[0],dim=1) == 2).nonzero(as_tuple=True)[0][0])
-                strt = random.randint(15,max(0,idx1+25))
+                strt = random.randint(2,max(0,idx1+10))
                 #idx2 = int((torch.argmax(groundtruth[0],dim=1) == 2).nonzero(as_tuple=True)[0][0])
                 end = random.randint(min(batch.shape[1],strt+25), batch.shape[1])
                 target = target[:,strt:end]
                 groundtruth = groundtruth[:,strt:end]
                 batch = batch[:,strt:end]
-            
+
             #load the image tensors to input1
-            input1 =  batch 
+            input1 =  batch
+            print("input1 size: ", input1.size())
 
             #assign the tensors to device
             groundtruth = groundtruth.to(self.device)
@@ -115,8 +118,8 @@ class Trainer:
                     for g in self.optimizer.param_groups:
                         g['lr'] = g['lr'] * args.second_lr_ratio
             self.optimizer.zero_grad()
-            
-            
+
+
             #=====Forward Propagation=====
             if self.model_type == 'img':
                 states, _ = self.net(input1)
@@ -126,10 +129,10 @@ class Trainer:
 
             # loss2 with loss2_occurance
             if args.steps % self.loss2_occurance == 0:
-            
+
                 if self.is_viterbi:
                     labels_tensor = []
-                    for batch_idx in range(output.shape[0]):       
+                    for batch_idx in range(output.shape[0]):
                         # finding the transcript from the ground truth.
                         groundtruth_t = self.get_prediction_states(groundtruth.cpu(), idx = batch_idx).cpu().detach().numpy()
                         transcript = [groundtruth_t[0]] + [groundtruth_t[i] for i in range(1,len(groundtruth_t)) if groundtruth_t[i] != groundtruth_t[i-1]]
@@ -164,17 +167,17 @@ class Trainer:
                 else:
                     #supervised
                     loss2 =  args.loss2_regulerizer * self.criterion2(states, groundtruth)
-            
+
             else:
                 loss2 = 0* loss1
-            
+
             #check for model with GRU or imagenet models
             if self.model_type == 'img':
                 loss = loss2
                 losses =  [0, [loss2.item()]]
                 self.Logger.log('info', inputs["folder"][0]  + ' Step:'+ str(args.steps+1)  +' loss: '+ str(loss2.item()) )
             else:
-                loss =   loss1 +  loss2 
+                loss =   loss1 +  loss2
                 self.Logger.log('info', inputs["folder"][0]  + ' Step:'+ str(args.steps+1)  +' loss1: '+ str(loss1.item())  +' loss2: '+ str(loss2.item()) )
                 losses =  [loss1.item(), [loss2.item()]]
 
@@ -209,16 +212,16 @@ class Trainer:
 
                 #print (str(groundtruth.shape[1]), np.unique(groundtruth_t))
                 transcript = [groundtruth_t[0]] + [groundtruth_t[i] for i in range(1,len(groundtruth_t)) if groundtruth_t[i] != groundtruth_t[i-1]]
-      
-                #========Prediction========= 
+
+                #========Prediction=========
                 if self.model_type == 'img':
                     test_input = test_input.to(self.device)
                     states, _ = self.net(test_input)
                 else:
                     pred, states, _ = self.net(test_input)
-                
+
                 if self.is_viterbi:
-                    forwarder = states[0].cpu().detach().numpy()   
+                    forwarder = states[0].cpu().detach().numpy()
                     log_probs = forwarder - np.log(self.prior)
                     #log_probs = log_probs - np.max(log_probs)
 
@@ -231,7 +234,7 @@ class Trainer:
                     labels = torch.tensor(labels)
                     labels = labels.to(self.device)
                     labels[labels==6] = 0
-                    
+
                 else:
                     #batch size 1 for testdata of sequnece
                     if self.model_type == 'img':
@@ -245,11 +248,11 @@ class Trainer:
                     labels_tensor = torch.argmax(label,dim=1)
                 else:
                     labels_tensor = self.get_prediction_states(label)
-        
+
                 self.Logger.log('info',test_data["folder"][0])
                 self.Logger.log('info',"Pred1: "+str(labels))
                 self.Logger.log('info',"True1: "+str(labels_tensor))
-                
+
 
                 #Calculate loss for tracking net
                 if self.model_type == 'seq':
@@ -263,13 +266,13 @@ class Trainer:
                 else:
                     labels_tensor = labels_tensor.to(self.device)
                     val_loss2 +=  args.loss2_regulerizer  * self.criterion2(states[0], labels_tensor)
-    
-                
+
+
                 #display predicted image to the output folder if the  model_type is seq
                 if didx ==0 and self.model_type == 'seq':
                     #store onr of the input and output image for display purpose (to watch learning)
-                    orig_image = test_input[0,25,0,:,:].cpu().detach().numpy() * 255
-                    pred_img = pred[0,25,0,:,:].cpu().detach().numpy() * 255
+                    orig_image = test_input[0,10,0,:,:].cpu().detach().numpy() * 255
+                    pred_img = pred[0,10,0,:,:].cpu().detach().numpy() * 255
 
                     #Save images to see the learning
                     cv2.imwrite(os.path.join(args.out_path,"input_"+ str(args.steps) +".png"),orig_image)
@@ -278,7 +281,7 @@ class Trainer:
                 if didx == 10:
                     break
 
-            val_loss = (val_loss1+val_loss2)/10 
+            val_loss = (val_loss1+val_loss2)/10
             val_loss1 /= 10
             val_loss2 /= 10
 
@@ -337,7 +340,7 @@ class Trainer:
         np.savetxt( os.path.join(args.out_path,"legths.iter_"+str(args.steps)+".txt"), self.mean_lengths)
         np.savetxt( os.path.join(args.out_path,"prior.iter_"+str(args.steps)+".txt"), self.prior)
 
-    
+
     def test_step(self, testloader, args):
         '''
         A function which calculate the test scores and calculate corresponding matrices.
@@ -345,7 +348,7 @@ class Trainer:
         #arguments for storing the results to calculate the scores
         labels_store = {}
         ua = []
-        viterbi = [] 
+        viterbi = []
         labels_Vector = []
         groundtruth_Vector = []
 
@@ -360,7 +363,7 @@ class Trainer:
                 test_input =  test_data["image"]
                 label = test_data["label"]
 
-                 #========Prediction========= 
+                 #========Prediction=========
                 if self.model_type == 'img':
                     test_input = test_input.to(self.device)
                     states, embeddings = self.net(test_input)
@@ -368,7 +371,7 @@ class Trainer:
                     pred, states, embeddings = self.net(test_input)
 
                 if self.is_viterbi:
-                    forwarder = states[0].cpu().detach().numpy() 
+                    forwarder = states[0].cpu().detach().numpy()
                     log_probs = forwarder - np.log(self.prior)
 
                     # define transcript grammar and updated length model
@@ -406,19 +409,19 @@ class Trainer:
                     groundtruth_Vector.append(groundtruth_3[l])
 
                 #feature space plot
-                if self.model_type == 'img':
-                    new_embeddings = embeddings
-                else:
-                    new_embeddings = embeddings[0].flatten(start_dim = 1)
-                if didx == 0:
-                    features_tensorboard = new_embeddings.cpu()
-                    pred_tensorboard = torch.tensor(final_labels)
-                    true_tensorboard = torch.tensor(np.array(labels_tensor+1))
-                else:
-                    features_tensorboard = np.concatenate((features_tensorboard,new_embeddings.cpu()))
-                    pred_tensorboard = np.concatenate((pred_tensorboard, torch.tensor(final_labels) ))
-                    true_tensorboard = np.concatenate((true_tensorboard, torch.tensor(np.array(labels_tensor+1)) ))
-        
+                # if self.model_type == 'img':
+                #     new_embeddings = embeddings
+                # else:
+                #     new_embeddings = embeddings[0].flatten(start_dim = 1)
+                # if didx == 0:
+                #     features_tensorboard = new_embeddings.cpu()
+                #     pred_tensorboard = torch.tensor(final_labels)
+                #     true_tensorboard = torch.tensor(np.array(labels_tensor+1))
+                # else:
+                #     features_tensorboard = np.concatenate((features_tensorboard,new_embeddings.cpu()))
+                #     pred_tensorboard = np.concatenate((pred_tensorboard, torch.tensor(final_labels) ))
+                #     true_tensorboard = np.concatenate((true_tensorboard, torch.tensor(np.array(labels_tensor+1)) ))
+
         k = self.n_classes
 
         #Plotting the time plot from the test dataset
@@ -435,8 +438,7 @@ class Trainer:
             axs[i].set_xlabel("Time (Frame Number)")
             axs[i].set_ylabel("Cell Trajecteries")
             axs[i].grid(True)
-        plt.savefig(os.path.join(args.out_path,"showLabelMatrix_"+ str(args.steps) +".jpg"), dpi=150)
-
+        plt.savefig(os.path.join(args.out_path,"showLabelMatrix_"+ str(args.steps) +".svg"))
 
         #claculating performance and plotting confusion matrix
         #Convert result and ground truth to arrays
@@ -454,7 +456,7 @@ class Trainer:
         for i in range(6):
             class1 = i+1
             first = np.where(groundtruth_Vector==class1)
-            #print (i+1,first)     
+            #print (i+1,first)
             for j in range(6):
                 length = 0
                 for d in first[0]:
@@ -462,7 +464,7 @@ class Trainer:
                         length += 1
                 confus[i,j] = length
 
-        plotconfusionmatrx(confus, args)
+        plotconfusionmatrix(confus, args)
 
         #Calculation of Precision Recall and F1 Score from confusion matrix.
         precision=[]
@@ -486,19 +488,21 @@ class Trainer:
             file_object.write("Recall: "+ str(recall) + '\n')
             file_object.write("Precision: "+ str(precision) + '\n')
             file_object.write("F1: "+ str(F1) + '\n\n\n\n\n')
+            for i in range(len(titles)):
+                file_object.write(f"Label matrix: {titles[i]}\n{methods[i]}\n\n")
 
 
-        #plot the tensorboard for 5000th iteration
-        if args.steps == 9000:
+        #plot the tensorboard every 10000 iterations
+        # if args.steps % 10000 == 0:
 
-            tensorboard_folder = os.path.join(args.out_path, 'run_' + str(args.steps) + 'tensorboard')
-            if not os.path.exists(tensorboard_folder):
-                os.makedirs(tensorboard_folder)
-            writer = SummaryWriter(os.path.join(tensorboard_folder, args.architecture  + '_true' ))
-            writer.add_embedding(features_tensorboard,
-                    metadata= true_tensorboard)
-            writer.close()
-            writer = SummaryWriter(os.path.join(tensorboard_folder, args.architecture + '_pred' ))
-            writer.add_embedding(features_tensorboard,
-                    metadata=pred_tensorboard)
-            writer.close()
+        #     tensorboard_folder = os.path.join(args.out_path, 'run_' + str(args.steps) + 'tensorboard')
+        #     if not os.path.exists(tensorboard_folder):
+        #         os.makedirs(tensorboard_folder)
+        #     writer = SummaryWriter(os.path.join(tensorboard_folder, args.architecture  + '_train' ))
+        #     writer.add_embedding(features_tensorboard,
+        #             metadata= true_tensorboard)
+        #     writer.close()
+        #     writer = SummaryWriter(os.path.join(tensorboard_folder, args.architecture + '_pred' ))
+        #     writer.add_embedding(features_tensorboard,
+        #             metadata=pred_tensorboard)
+        #     writer.close()

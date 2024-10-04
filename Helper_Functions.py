@@ -6,14 +6,14 @@ import matplotlib as mpl
 def load_image_paths_livecellminer(base_path, n_classes = 3, train_to_test_ratio = 0.85, type = 'seq'):
     """
     Load all the training image paths from the folder given
-    
-    Arguments:       
+
+    Arguments:
         basepath            : basepath where the sequences are stored
         n_classes           : to create labels as in subclass or not
         type                : how to load images as seq or as img
         train_to_test_ratio : ratio of sequences for train to test
 
-    Return: 
+    Return:
         all_frames_train    : Train dictionary with for each index a list of paths of sequence/image and corresponding label
         all_frames_test     : Test dictionary with for each index a list of paths of sequence/image and corresponding label
         train               : List of training sequence folder names (if type = seq) or train image paths (if type = img)
@@ -28,17 +28,17 @@ def load_image_paths_livecellminer(base_path, n_classes = 3, train_to_test_ratio
     #starting values for train and test indices
     trainidx = -1
     testidx = -1
-    
+
     #all folders in the base path
     all_folders = os.listdir(base_path)
 
-    #train/test ratio multiplied by total 
+    #train/test ratio multiplied by total
     num_train = train_to_test_ratio * len(all_folders)
 
     #for each folder in the base path
-    for folder in all_folders:    
+    for folder in all_folders:
         if "cell" in folder:
-            
+
             csv_name = os.path.join (base_path, folder,folder + "_Synchronization.csv")
             with open(csv_name, "r") as f:
                 reader = csv.reader(f, delimiter="\t")
@@ -47,9 +47,9 @@ def load_image_paths_livecellminer(base_path, n_classes = 3, train_to_test_ratio
                     true_labels = labels
                     idx2 = int(min(np.where(labels==2)[0])) + random.randint(15,22)
                     if n_classes == 4:
-                        labels[idx2:] +=1 
+                        labels[idx2:] +=1
                     else:
-                        labels[idx2:] -= 2 
+                        labels[idx2:] -= 2
 
             #image paths
             path = os.path.join (base_path, folder, "Raw")      #inside each folder the images are under a folder named Raw
@@ -67,34 +67,34 @@ def load_image_paths_livecellminer(base_path, n_classes = 3, train_to_test_ratio
                     trainidx = trainidx + 1
                     train.append(folder)
                     all_frames_train[trainidx]  =  [ files, labels, true_labels]           #new_files, new_labels, new_true_labels,
-                else: 
+                else:
                     testidx += 1
                     test.append(folder)
-                    all_frames_test[testidx]  =  [files, labels, true_labels]     # new_files, new_labels, new_true_labels, 
+                    all_frames_test[testidx]  =  [files, labels, true_labels]     # new_files, new_labels, new_true_labels,
             else:
                 if len(train) < num_train:
                     for f, l in zip(files,labels):
-                        trainidx += 1 
-                        all_frames_train[trainidx]  =  [ f, l ]  
-                        train.append(f)      
-                else: 
+                        trainidx += 1
+                        all_frames_train[trainidx]  =  [ f, l ]
+                        train.append(f)
+                else:
                     for f, l in zip(files,labels):
                         testidx += 1
                         test.append(f)
-                        all_frames_test[testidx]  =  [ f, l ]  
+                        all_frames_test[testidx]  =  [ f, l ]
 
     return all_frames_train, all_frames_test, train, test
 
 def load_image_paths_zhong(base_path, n_classes = 6, type = 'seq'):
     """
     Load all the training image paths from the folder given
-    
-    Arguments:       
+
+    Arguments:
         basepath : basepath where the sequences are stored
         n_classes: to create labels as in subclass or not
         type     : how to load images as seq or as img
 
-    Return: 
+    Return:
         all_frames_train    : Train dictionary with for each index a list of paths of sequence/image and corresponding label
         all_frames_test     : Test dictionary with for each index a list of paths of sequence/image and corresponding label
         train               : List of training sequence folder names (if type = seq) or train image paths (if type = img)
@@ -109,12 +109,12 @@ def load_image_paths_zhong(base_path, n_classes = 6, type = 'seq'):
     #starting values for train and test indices
     trainidx = -1
     testidx = -1
-    
+
     #for each folder in the base path
-    for folder in os.listdir(base_path):    
-    
+    for folder in os.listdir(base_path):
+
         # load labels
-        csv_name = os.path.join (base_path, folder,folder + "_ManualStages.txt") 
+        csv_name = os.path.join (base_path, folder,folder + "_ManualStages.txt")
         csv_name = csv_name.replace("B02","B01")
         with open(csv_name, "r") as f:
             reader = f.readline()
@@ -139,21 +139,21 @@ def load_image_paths_zhong(base_path, n_classes = 6, type = 'seq'):
                 trainidx = trainidx + 1
                 train.append(folder)
                 all_frames_train[trainidx]  =  [ files, labels, true_labels]           #new_files, new_labels, new_true_labels,
-            elif 'B01' in folder: 
+            elif 'B01' in folder:
                 testidx += 1
                 test.append(folder)
-                all_frames_test[testidx]  =  [files, labels, true_labels]     # new_files, new_labels, new_true_labels, 
+                all_frames_test[testidx]  =  [files, labels, true_labels]     # new_files, new_labels, new_true_labels,
         else:
-            if "P0037" not in folder: 
+            if "P0037" not in folder:
                 for f, l in zip(files,labels):
-                    trainidx += 1 
-                    all_frames_train[trainidx]  =  [ f, l ]  
-                    train.append(f)      
-            elif 'B01' in folder: 
+                    trainidx += 1
+                    all_frames_train[trainidx]  =  [ f, l ]
+                    train.append(f)
+            elif 'B01' in folder:
                 for f, l in zip(files,labels):
                     testidx += 1
                     test.append(f)
-                    all_frames_test[testidx]  =  [ f, l ]  
+                    all_frames_test[testidx]  =  [ f, l ]
 
     return all_frames_train, all_frames_test, train, test
 
@@ -201,10 +201,10 @@ def plot_losses(args, epochs, trainloss1, trainloss2, validationloss1, validatio
     plt.savefig(os.path.join(args.out_path,"autoencoder_"+ name +".png"))
 
 
-def plotconfusionmatrx(confus, args):
+def plotconfusionmatrix(confus, args):
     '''
     A function to plot the confusion matrix given confus 6*6
-    
+
     Arguments:
         confus  : A 6*6 numpy matrix
         args    : system arguments
@@ -217,7 +217,7 @@ def plotconfusionmatrx(confus, args):
     cax = ax.matshow(confus,  cmap= plt.cm.get_cmap("YlOrRd"), interpolation='none')
     plt.title('Confusion matrix of the classifier')
     for (i, j), z in np.ndenumerate(confus):
-        ax.text(j, i, '{:0.2f}'.format(z), ha='center', va='center')
+        ax.text(j, i, np.round(z, 3), ha='center', va='center')
     fig.colorbar(cax)
     ax.set_xticklabels(['']+labels)
     ax.set_yticklabels(['']+labels)
